@@ -16,9 +16,8 @@ module System.Entropy
 	, closeHandle
 	) where
 
-import Control.Monad (liftM)
+import Control.Monad (liftM, when)
 import Data.ByteString as B
-import Data.ByteString.Lazy as L
 import System.IO (openFile, hClose, IOMode(..), Handle, withBinaryFile)
 
 #if defined(isWindows)
@@ -114,6 +113,12 @@ hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
 hGetEntropy (CH h) = cryptGenRandom h
 
 #else
+{- Not windows, assuming nix with a /dev/urandom -}
+import Foreign.C.Types
+import Foreign.Ptr
+import Data.ByteString.Internal as B
+
+source :: FilePath
 source = "/dev/urandom"
 
 -- |Handle for manual resource mangement
@@ -131,6 +136,17 @@ closeHandle (CH h) = hClose h
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) = B.hGet h
 
+#ifdef arch_x86_64
+foreign import ccall unsafe "cpu_has_rdrand"
+   c_cpu_has_rdrand :: IO CInt
+
+foreign import ccall unsafe "get_rand_bytes"
+  c_get_rand_bytes :: Ptr CUChar -> CSize -> IO CInt
+
+cpuHasRdRand :: IO Bool
+cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
+#endif
+
 -- |Inefficiently get a specific number of bytes of cryptographically
 -- secure random data using the system-specific facilities.
 --
@@ -138,6 +154,17 @@ hGetEntropy (CH h) = B.hGet h
 -- this entropy is considered "cryptographically secure" but not true
 -- entropy.
 getEntropy :: Int -> IO B.ByteString
-getEntropy n = withBinaryFile source ReadMode (`B.hGet` n)
+getEntropy n = do
+#if arch_x86_64
+    b <- cpuHasRdRand
+    if b then B.create n $ \ptr ->  do
+                        r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                        when (r /= 0)
+                             (fail "RDRand failed to gather entropy")
+         else do
 #endif
+{- arch_x86 -}
+               withBinaryFile source ReadMode (`B.hGet` n)
+#endif
+{- OS Test -}
 

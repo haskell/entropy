@@ -1,5 +1,5 @@
 name:           entropy
-version:        0.2.1
+version:        0.2.2
 license:        BSD3
 license-file:   LICENSE
 copyright:      Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -18,14 +18,19 @@ build-type:     Simple
 cabal-version:  >= 1.6
 tested-with:    GHC == 6.12.1
 data-files:
-extra-source-files:
+extra-source-files: ./cbits/rdrand.c
+                  , ./cbits/rdrand.h
 
 Library
   Build-Depends: base == 4.*, bytestring
-  ghc-options:
+  ghc-options:  -Wall -O2
   hs-source-dirs:
   exposed-modules: System.Entropy
   other-modules:
+  if arch(x86_64)
+    cpp-options: -Darch_x86_64
+    c-sources:    cbits/rdrand.c
+    include-dirs: cbits
   if os(windows)
     cpp-options: -DisWindows
     extra-libraries: advapi32
