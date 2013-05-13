@@ -41,12 +41,28 @@ import Data.ByteString.Internal as BI
 import Data.Int (Int32)
 import Data.Word (Word32, Word8)
 import Foreign.C.String (CString, withCString)
-import Foreign.Ptr (Ptr, nullPtr)
+import Foreign.C.Types
+import Foreign.Ptr (Ptr, nullPtr, castPtr)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (toBool)
 import Foreign.Storable (peek)
 
-newtype CryptHandle = CH Word32
+#ifdef arch_x86_64
+foreign import ccall unsafe "cpu_has_rdrand"
+   c_cpu_has_rdrand :: IO CInt
+
+foreign import ccall unsafe "get_rand_bytes"
+  c_get_rand_bytes :: Ptr CUChar -> CSize -> IO CInt
+
+cpuHasRdRand :: IO Bool
+cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
+#endif
+
+newtype CryptHandle
+    = CH Word32
+#ifdef arch_x86_64
+    | UseRdRand
+#endif
 
 -- Define the constants we need from WinCrypt.h 
 msDefProv :: String
@@ -95,6 +111,11 @@ cryptReleaseCtx h = do
 -- on platforms without a secure RNG!
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
+#ifdef arch_x86_64
+    b <- cpuHasRdRand
+    if b then hGetEntropy UseRdRand n
+         else do
+#endif
    h <- cryptAcquireCtx
    bs <- cryptGenRandom h n
    let !bs' = bs
@@ -103,7 +124,13 @@ getEntropy n = do
 
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
-openHandle = liftM CH cryptAcquireCtx
+openHandle = do
+#ifdef arch_x86_64
+    b <- cpuHasRdRand
+    if b then return UseRdRand
+         else do
+#endif
+    liftM CH cryptAcquireCtx
 
 -- |Close the `CryptHandle`
 closeHandle (CH h) = cryptReleaseCtx h
@@ -111,6 +138,13 @@ closeHandle (CH h) = cryptReleaseCtx h
 -- |Read from `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) = cryptGenRandom h
+#ifdef arch_x86_64
+hGetEntropy UseRdRand =
+    B.create n $ \ptr ->  do
+                r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                when (r /= 0)
+                     (fail "RDRand failed to gather entropy")
+#endif
 
 #else
 {- Not windows, assuming nix with a /dev/urandom -}
@@ -122,7 +156,11 @@ source :: FilePath
 source = "/dev/urandom"
 
 -- |Handle for manual resource mangement
-data CryptHandle = CH Handle | UseRdRand
+data CryptHandle
+    = CH Handle
+#ifdef arch_x86_64
+    | UseRdRand
+#endif
 
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
@@ -173,10 +211,7 @@ getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
 #if arch_x86_64
     b <- cpuHasRdRand
-    if b then B.create n $ \ptr ->  do
-                        r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                        when (r /= 0)
-                             (fail "RDRand failed to gather entropy")
+    if b then hGetEntropy UseRdRand n
          else do
 #endif
 {- arch_x86 -}
