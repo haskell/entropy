@@ -122,19 +122,35 @@ source :: FilePath
 source = "/dev/urandom"
 
 -- |Handle for manual resource mangement
-newtype CryptHandle = CH Handle
+data CryptHandle = CH Handle | UseRdRand
 
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
-openHandle = liftM CH (openFile source ReadMode)
+openHandle = do
+#ifdef arch_x86_64
+    b <- cpuHasRdRand
+    if b then return UseRdRand
+         else do
+#endif
+    liftM CH (openFile source ReadMode)
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h) = hClose h
+#ifdef arch_x86_64
+closeHandle UseRdRand = return ()
+#endif
 
 -- |Read random data from a `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) = B.hGet h
+#ifdef arch_x86_64
+hGetEntropy UseRdRand = \n -> do
+    B.create n $ \ptr ->  do
+                r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                when (r /= 0)
+                     (fail "RDRand failed to gather entropy")
+#endif
 
 #ifdef arch_x86_64
 foreign import ccall unsafe "cpu_has_rdrand"
