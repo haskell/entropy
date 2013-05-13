@@ -58,7 +58,7 @@ cpuHasRdRand :: IO Bool
 cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 #endif
 
-newtype CryptHandle
+data CryptHandle
     = CH Word32
 #ifdef arch_x86_64
     | UseRdRand
