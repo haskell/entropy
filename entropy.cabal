@@ -11,8 +11,8 @@ description:    A platform independent method to obtain cryptographically strong
                 sound) PRNGs should see the 'DRBG' package too!
 synopsis:       A platform independent entropy source
 category:       Data, Cryptography
-homepage:       http://trac.haskell.org/crypto-api/wiki
-bug-reports:    http://trac.haskell.org/crypto-api/report/1
+homepage:       https://github.com/TomMD/entropy
+bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 build-type:     Simple
 cabal-version:  >= 1.6
@@ -34,3 +34,7 @@ Library
   if os(windows)
     cpp-options: -DisWindows
     extra-libraries: advapi32
+
+source-repository head
+    type:       git
+    location:   https://github.com/TomMD/entropy
