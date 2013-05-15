@@ -1,3 +1,5 @@
+#ifdef HAVE_RDRAND
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -49,3 +51,5 @@ int get_rand_bytes(uint8_t *therand, size_t len)
     }
     return fail;
 }
+
+#endif // RDRAND

@@ -14,7 +14,7 @@ category:       Data, Cryptography
 homepage:       https://github.com/TomMD/entropy
 bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
-build-type:     Simple
+build-type:     Custom
 cabal-version:  >= 1.6
 tested-with:    GHC == 6.12.1
 data-files:

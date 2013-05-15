@@ -47,7 +47,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (toBool)
 import Foreign.Storable (peek)
 
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
    c_cpu_has_rdrand :: IO CInt
 
@@ -60,7 +60,7 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 
 data CryptHandle
     = CH Word32
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
     | UseRdRand
 #endif
 
@@ -111,7 +111,7 @@ cryptReleaseCtx h = do
 -- on platforms without a secure RNG!
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
     b <- cpuHasRdRand
     if b then hGetEntropy UseRdRand n
          else do
@@ -125,7 +125,7 @@ getEntropy n = do
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
 openHandle = do
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
     b <- cpuHasRdRand
     if b then return UseRdRand
          else do
@@ -138,7 +138,7 @@ closeHandle (CH h) = cryptReleaseCtx h
 -- |Read from `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) = cryptGenRandom h
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
 hGetEntropy UseRdRand =
     B.create n $ \ptr ->  do
                 r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
@@ -150,7 +150,6 @@ hGetEntropy UseRdRand =
 {- Not windows, assuming nix with a /dev/urandom -}
 import Foreign.C.Types
 import Foreign.Ptr
-import Data.ByteString.Internal as B
 
 source :: FilePath
 source = "/dev/urandom"
@@ -158,14 +157,14 @@ source = "/dev/urandom"
 -- |Handle for manual resource mangement
 data CryptHandle
     = CH Handle
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
     | UseRdRand
 #endif
 
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
 openHandle = do
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
     b <- cpuHasRdRand
     if b then return UseRdRand
          else do
@@ -175,14 +174,14 @@ openHandle = do
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h) = hClose h
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
 closeHandle UseRdRand = return ()
 #endif
 
 -- |Read random data from a `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) = B.hGet h
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
 hGetEntropy UseRdRand = \n -> do
     B.create n $ \ptr ->  do
                 r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
@@ -190,7 +189,7 @@ hGetEntropy UseRdRand = \n -> do
                      (fail "RDRand failed to gather entropy")
 #endif
 
-#ifdef arch_x86_64
+#ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
    c_cpu_has_rdrand :: IO CInt
 
@@ -209,7 +208,7 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 -- entropy.
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
-#if arch_x86_64
+#ifdef HAVE_RDRAND
     b <- cpuHasRdRand
     if b then hGetEntropy UseRdRand n
          else do
