@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Setup
@@ -10,7 +9,6 @@ import System.Process
 import System.Directory
 import System.FilePath
 import System.Exit
-import Language.Haskell.TH (appE, varE, mkName, conE)
 
 main = defaultMainWithHooks hk
  where
@@ -34,11 +32,7 @@ cArgsHC = map ("-optc" ++) cArgs
 
 canUseRDRAND :: FilePath -> IO Bool
 canUseRDRAND cc = do
-        -- Template haskell to call withTempDirectory in a backward compatible way
-        -- withTempDirectory normal False "" "testRDRAND" $ \tmpDir -> do 
-        $(if cabalVersion >= Version [1,17,0] []
-            then  appE (appE (varE $ mkName "withTempDirectory") (varE 'normal)) (conE (mkName "False"))
-            else  appE (varE $ mkName "withTempDirectory") (varE 'normal)) "" "testRDRAND" $ \tmpDir -> do
+        withTempDirectory normal "" "testRDRAND" $ \tmpDir -> do
         writeFile (tmpDir ++ "/testRDRAND.c")
                 (unlines        [ "#include <stdint.h>"
                                 , "int main() {"
