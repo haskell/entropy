@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Setup
@@ -32,7 +34,11 @@ cArgsHC = map ("-optc" ++) cArgs
 
 canUseRDRAND :: FilePath -> IO Bool
 canUseRDRAND cc = do
+#if __GLASGOW_HASKELL__ >= 707
+        withTempDirectory normal False "" "testRDRAND" $ \tmpDir -> do
+#else
         withTempDirectory normal "" "testRDRAND" $ \tmpDir -> do
+#endif
         writeFile (tmpDir ++ "/testRDRAND.c")
                 (unlines        [ "#include <stdint.h>"
                                 , "int main() {"
