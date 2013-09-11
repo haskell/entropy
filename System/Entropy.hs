@@ -16,9 +16,11 @@ module System.Entropy
 	, closeHandle
 	) where
 
-import Control.Monad (liftM, when)
+import Control.Monad (liftM)
 import Data.ByteString as B
-import System.IO (openFile, hClose, IOMode(..), Handle, withBinaryFile)
+import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
+import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
+import Foreign (allocaBytes)
 
 #if defined(isWindows)
 {- C example for windows rng - taken from a blog, can't recall which one but thank you!
@@ -148,7 +150,6 @@ hGetEntropy UseRdRand =
 
 #else
 {- Not windows, assuming nix with a /dev/urandom -}
-import Foreign.C.Types
 import Foreign.Ptr
 
 source :: FilePath
@@ -156,7 +157,7 @@ source = "/dev/urandom"
 
 -- |Handle for manual resource mangement
 data CryptHandle
-    = CH Handle
+    = CH Fd
 #ifdef HAVE_RDRAND
     | UseRdRand
 #endif
@@ -169,18 +170,26 @@ openHandle = do
     if b then return UseRdRand
          else do
 #endif
-    liftM CH (openFile source ReadMode)
+    liftM CH (openFd source ReadOnly Nothing defaultFileFlags)
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
-closeHandle (CH h) = hClose h
+closeHandle (CH h) = closeFd h
 #ifdef HAVE_RDRAND
 closeHandle UseRdRand = return ()
 #endif
 
+fdReadBS :: Fd -> Int -> IO B.ByteString
+fdReadBS fd n = do
+    allocaBytes n $ \buf -> do
+        rc <- fdReadBuf fd buf (fromIntegral n)
+        case rc of
+            0 -> ioError (ioeSetErrorString (mkIOError eofErrorType "fdRead" Nothing Nothing) "EOF")
+            n' -> B.packCStringLen (castPtr buf, fromIntegral n')
+
 -- |Read random data from a `CryptHandle`
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
-hGetEntropy (CH h) = B.hGet h
+hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+hGetEntropy (CH h) = fdReadBS h
 #ifdef HAVE_RDRAND
 hGetEntropy UseRdRand = \n -> do
     B.create n $ \ptr ->  do
@@ -208,13 +217,9 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 -- entropy.
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
-#ifdef HAVE_RDRAND
-    b <- cpuHasRdRand
-    if b then hGetEntropy UseRdRand n
-         else do
-#endif
-{- arch_x86 -}
-               withBinaryFile source ReadMode (`B.hGet` n)
+    h <- openHandle
+    e <- hGetEntropy h n
+    closeHandle h
+    return e
 #endif
 {- OS Test -}
-
