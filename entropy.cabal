@@ -34,6 +34,8 @@ Library
   if os(windows)
     cpp-options: -DisWindows
     extra-libraries: advapi32
+  else
+    Build-Depends: unix
 
 source-repository head
     type:       git
