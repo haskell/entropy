@@ -1,3 +1,4 @@
+import Control.Monad
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Setup
@@ -13,10 +14,13 @@ import System.Exit
 main = defaultMainWithHooks hk
  where
  hk = simpleUserHooks { buildHook = \pd lbi uh bf -> do
-                                        let ccProg = Program "gcc" undefined undefined undefined
-                                            mConf = lookupProgram ccProg (withPrograms lbi)
+                                        let ccProg0  = Program "gcc" undefined undefined undefined
+                                            ccProg1  = Program "clang" undefined undefined undefined
+                                            f x      = lookupProgram x (withPrograms lbi)
+                                            mConf    = f ccProg0 `mplus` f ccProg1
                                             err = error "Could not determine C compiler"
                                             cc = locationPath . programLocation  . maybe err id $ mConf
+                                        print (withPrograms lbi)
                                         b <- canUseRDRAND cc
                                         let newWithPrograms1 = userSpecifyArgs "gcc" cArgs (withPrograms lbi)
                                             newWithPrograms  = userSpecifyArgs "ghc" cArgsHC newWithPrograms1
@@ -33,6 +37,7 @@ cArgsHC = map ("-optc" ++) cArgs
 canUseRDRAND :: FilePath -> IO Bool
 canUseRDRAND cc = do
         withTempDirectory normal "" "testRDRAND" $ \tmpDir -> do
+        -- withTempDirectory normal False "" "testRDRAND" $ \tmpDir -> do 
         writeFile (tmpDir ++ "/testRDRAND.c")
                 (unlines        [ "#include <stdint.h>"
                                 , "int main() {"
