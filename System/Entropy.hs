@@ -9,12 +9,12 @@
 -}
 
 module System.Entropy
-        ( getEntropy
-        , CryptHandle
-        , openHandle
-        , hGetEntropy
-        , closeHandle
-        ) where
+	( getEntropy
+	, CryptHandle
+	, openHandle
+	, hGetEntropy
+	, closeHandle
+	) where
 
 import Control.Monad (liftM)
 import Data.ByteString as B
