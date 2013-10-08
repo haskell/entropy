@@ -13,10 +13,11 @@ import System.Exit
 main = defaultMainWithHooks hk
  where
  hk = simpleUserHooks { buildHook = \pd lbi uh bf -> do
-                                        let ccProg = Program "gcc" undefined undefined undefined
-                                            mConf = lookupProgram ccProg (withPrograms lbi)
-                                            err = error "Could not determine C compiler"
-                                            cc = locationPath . programLocation  . maybe err id $ mConf
+                                        -- let ccProg = Program "gcc" undefined undefined undefined
+                                        let hcProg = Program "ghc" undefined undefined undefined
+                                            mConf  = lookupProgram hcProg (withPrograms lbi)
+                                            err    = error "Could not determine C compiler"
+                                            cc     = locationPath . programLocation  . maybe err id $ mConf
                                         b <- canUseRDRAND cc
                                         let newWithPrograms1 = userSpecifyArgs "gcc" cArgs (withPrograms lbi)
                                             newWithPrograms  = userSpecifyArgs "ghc" cArgsHC newWithPrograms1
@@ -43,6 +44,6 @@ canUseRDRAND cc = do
                                 , "   return (!err);"
                                 , "}"
                                 ])
-        ec <- rawSystemExitCode normal cc [tmpDir </> "testRDRAND.c", "-o" ++ tmpDir ++ "/a.out"]
+        ec <- rawSystemExitCode normal cc [tmpDir </> "testRDRAND.c", "-o", tmpDir ++ "/a.o","-c"]
         notice normal $ "Result of RDRAND Test: " ++ show (ec == ExitSuccess)
         return (ec == ExitSuccess)
