@@ -19,7 +19,6 @@ module System.Entropy
 import Control.Monad (liftM)
 import Data.ByteString as B
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
-import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
 import Foreign (allocaBytes)
 
 #if defined(isWindows)
@@ -150,6 +149,7 @@ hGetEntropy UseRdRand =
 
 #else
 {- Not windows, assuming nix with a /dev/urandom -}
+import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
 import Foreign.Ptr
 
 source :: FilePath
