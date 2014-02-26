@@ -5,7 +5,7 @@
  Portability: portable
 
  Obtain entropy from system sources.
- Currently, windows and *nix systems with a @/dev/urandom@ are supported.
+ Currently, windows and *nix systems with a @\/dev\/urandom@ are supported.
 -}
 
 module System.Entropy
