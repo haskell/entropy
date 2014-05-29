@@ -22,13 +22,9 @@ module System.Entropy
         , closeHandle
         ) where
 
-#ifndef XEN
 import Control.Monad (liftM, when)
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
 import Foreign (allocaBytes)
-#else
-import Control.Monad (when)
-#endif
 import Data.ByteString as B
 
 #if defined(isWindows)
@@ -127,11 +123,11 @@ getEntropy n = do
     if b then hGetEntropy UseRdRand n
          else do
 #endif
-      h <- cryptAcquireCtx
-      bs <- cryptGenRandom h n
-      let !bs' = bs
-      cryptReleaseCtx h
-      return bs'
+                  h <- cryptAcquireCtx
+                  bs <- cryptGenRandom h n
+                  let !bs' = bs
+                  cryptReleaseCtx h
+                  return bs'
 
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
@@ -141,16 +137,16 @@ openHandle = do
     if b then return UseRdRand
          else do
 #endif
-    liftM CH cryptAcquireCtx
+                  liftM CH cryptAcquireCtx
 
 -- |Close the `CryptHandle`
 closeHandle (CH h) = cryptReleaseCtx h
 
 -- |Read from `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
-hGetEntropy (CH h) = cryptGenRandom h
+hGetEntropy (CH h) n = cryptGenRandom h n
 #ifdef HAVE_RDRAND
-hGetEntropy UseRdRand =
+hGetEntropy UseRdRand n =
     B.create n $ \ptr ->  do
                 r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
                 when (r /= 0)
