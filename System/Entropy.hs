@@ -127,11 +127,11 @@ getEntropy n = do
     if b then hGetEntropy UseRdRand n
          else do
 #endif
-   h <- cryptAcquireCtx
-   bs <- cryptGenRandom h n
-   let !bs' = bs
-   cryptReleaseCtx h
-   return bs'
+      h <- cryptAcquireCtx
+      bs <- cryptGenRandom h n
+      let !bs' = bs
+      cryptReleaseCtx h
+      return bs'
 
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
