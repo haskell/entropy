@@ -66,7 +66,7 @@ data CryptHandle
 msDefProv :: String
 msDefProv = "Microsoft Base Cryptographic Provider v1.0"
 provRSAFull :: Word32
-provRSAFull = fromIntegral 1
+provRSAFull = 1
 cryptVerifyContext :: Word32
 cryptVerifyContext = fromIntegral 0xF0000000
 
@@ -79,10 +79,10 @@ foreign import stdcall unsafe "CryptReleaseContext"
    c_cryptReleaseCtx :: Word32 -> Word32 -> IO Int32
 
 cryptAcquireCtx :: IO Word32
-cryptAcquireCtx = 
+cryptAcquireCtx =
    alloca $ \handlePtr -> 
       withCString msDefProv $ \provName -> do
-         stat <- c_cryptAcquireCtx handlePtr nullPtr provName (fromIntegral 1) (fromIntegral cryptVerifyContext)
+         stat <- c_cryptAcquireCtx handlePtr nullPtr provName provRSAFull cryptVerifyContext
          if (toBool stat)
             then peek handlePtr
             else fail "c_cryptAcquireCtx"
@@ -90,7 +90,7 @@ cryptAcquireCtx =
 cryptGenRandom :: Word32 -> Int -> IO B.ByteString
 cryptGenRandom h i = 
    BI.create i $ \c_buffer -> do
-      stat <- c_cryptGenRandom (fromIntegral h) (fromIntegral i) c_buffer
+      stat <- c_cryptGenRandom h (fromIntegral i) c_buffer
       if (toBool stat)
          then return ()
          else fail "c_cryptGenRandom"
@@ -113,6 +113,7 @@ openHandle = do
                   liftM CH cryptAcquireCtx
 
 -- |Close the `CryptHandle`
+closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h) = cryptReleaseCtx h
 
 -- |Read from `CryptHandle`

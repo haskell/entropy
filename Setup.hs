@@ -29,7 +29,7 @@ cArgs :: [String]
 cArgs = ["-DHAVE_RDRAND"]
 
 cArgsHC :: [String]
-cArgsHC = map ("-optc" ++) cArgs
+cArgsHC = cArgs ++ map ("-optc" ++) cArgs
 
 canUseRDRAND :: FilePath -> IO Bool
 canUseRDRAND cc = do

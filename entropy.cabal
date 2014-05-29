@@ -30,7 +30,7 @@ flag halvm
     description:        Build for the HaLVM
     default:            False
 library
-  ghc-options:  -Wall -O2
+  ghc-options:  -O2
   exposed-modules: System.Entropy
   if os(windows)
     other-modules: System.EntropyWindows
