@@ -4,22 +4,32 @@
  Stability: beta
  Portability: portable
 
- Obtain entropy from system sources.
- Currently, windows and *nix systems with a @/dev/urandom@ are supported.
+ Obtain entropy from system sources or x86 RDRAND when available.
+
+ Currently supporting:
+
+    - Windows via CryptoAPO
+    - *nix systems via @\/dev\/urandom@
+    - QNX
+    - Xen only when RDRAND is available.
 -}
 
 module System.Entropy
-	( getEntropy
-	, CryptHandle
-	, openHandle
-	, hGetEntropy
-	, closeHandle
-	) where
+        ( getEntropy
+        , CryptHandle
+        , openHandle
+        , hGetEntropy
+        , closeHandle
+        ) where
 
-import Control.Monad (liftM)
-import Data.ByteString as B
+#ifndef XEN
+import Control.Monad (liftM, when)
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
 import Foreign (allocaBytes)
+#else
+import Control.Monad (when)
+#endif
+import Data.ByteString as B
 
 #if defined(isWindows)
 {- C example for windows rng - taken from a blog, can't recall which one but thank you!
@@ -149,8 +159,13 @@ hGetEntropy UseRdRand =
 
 #else
 {- Not windows, assuming nix with a /dev/urandom -}
-import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
 import Foreign.Ptr
+import Foreign.C.Types
+import Data.ByteString.Internal as B
+#ifdef XEN
+data CryptHandle = UseRdRand -- or die trying
+#else
+import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
 
 source :: FilePath
 source = "/dev/urandom"
@@ -161,6 +176,7 @@ data CryptHandle
 #ifdef HAVE_RDRAND
     | UseRdRand
 #endif
+#endif
 
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
@@ -170,15 +186,22 @@ openHandle = do
     if b then return UseRdRand
          else do
 #endif
-    liftM CH (openFd source ReadOnly Nothing defaultFileFlags)
+#ifdef XEN
+                    error "entropy: On halvm there is no entropy other than RDRAND."
+#else
+                    liftM CH (openFd source ReadOnly Nothing defaultFileFlags)
+#endif
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
+#ifndef XEN
 closeHandle (CH h) = closeFd h
+#endif
 #ifdef HAVE_RDRAND
 closeHandle UseRdRand = return ()
 #endif
 
+#ifndef XEN
 fdReadBS :: Fd -> Int -> IO B.ByteString
 fdReadBS fd n = do
     allocaBytes n $ \buf -> do
@@ -186,10 +209,13 @@ fdReadBS fd n = do
         case rc of
             0 -> ioError (ioeSetErrorString (mkIOError eofErrorType "fdRead" Nothing Nothing) "EOF")
             n' -> B.packCStringLen (castPtr buf, fromIntegral n')
+#endif
 
 -- |Read random data from a `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+#ifndef XEN
 hGetEntropy (CH h) = fdReadBS h
+#else
 #ifdef HAVE_RDRAND
 hGetEntropy UseRdRand = \n -> do
     B.create n $ \ptr ->  do
@@ -197,6 +223,8 @@ hGetEntropy UseRdRand = \n -> do
                 when (r /= 0)
                      (fail "RDRand failed to gather entropy")
 #endif
+#endif
+{- XEN -}
 
 #ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
@@ -213,7 +241,7 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 -- secure random data using the system-specific facilities.
 --
 -- Use '/dev/urandom' on *nix and CryptAPI when on Windows.  In short,
--- this entropy is considered "cryptographically secure" but not true
+-- this entropy is considered cryptographically secure but not true
 -- entropy.
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
