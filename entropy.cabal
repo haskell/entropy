@@ -43,14 +43,14 @@ library
     cpp-options: -DXEN -DHAVE_RDRAND
   if arch(x86_64)
     cpp-options: -Darch_x86_64
-    c-sources:    cbits/rdrand.c
-    include-dirs: cbits
   if os(windows)
     cpp-options: -DisWindows
     extra-libraries: advapi32
   else
     if !flag(halvm)
        Build-Depends: unix
+  c-sources:    cbits/rdrand.c
+  include-dirs: cbits
 
 source-repository head
     type:       git
