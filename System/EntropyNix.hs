@@ -24,7 +24,15 @@ import Foreign.Ptr
 import Foreign.C.Types
 import Data.ByteString.Internal as B
 
+#ifdef arch_i386
+-- See .cabal wrt GCC 4.8.2 asm compilation bug
+#undef HAVE_RDRAND
+#endif
+
 #ifdef XEN
+#ifndef HAVE_RDRAND
+#error "The entropy package requires RDRAND support when using the halvm/Xen"
+#endif
 data CryptHandle = UseRdRand -- or die trying
 #else
 
@@ -108,4 +116,3 @@ foreign import ccall unsafe "get_rand_bytes"
 cpuHasRdRand :: IO Bool
 cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 #endif
-
