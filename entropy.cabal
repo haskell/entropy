@@ -45,13 +45,16 @@ library
     cc-options:  -DXEN -DHAVE_RDRAND
   if arch(x86_64)
     cpp-options: -Darch_x86_64
+    cc-options:  -Darch_x86_64
     -- gcc 4.8.2 on i386 fails to compile rdrand.c when using -fPIC!
     c-sources:    cbits/rdrand.c
     include-dirs: cbits
   if arch(i386)
     cpp-options: -Darch_i386
+    cc-options:  -Darch_i386
   if os(windows)
     cpp-options: -DisWindows
+    cc-options:  -DisWindows
     extra-libraries: advapi32
   else
     if !flag(halvm)

@@ -11,6 +11,7 @@ int cpu_has_rdrand()
     return (cx & 0x40000000);
 }
 
+#ifdef arch_x86_64
 // Returns 1 on success
 inline int _rdrand64_step(uint64_t *therand)
 {
@@ -20,7 +21,6 @@ inline int _rdrand64_step(uint64_t *therand)
      return (int) err;
 }
 
-#ifdef arch_x86_64
 // Returns 0 on success, non-zero on failure.
 int get_rand_bytes(uint8_t *therand, size_t len)
 {
