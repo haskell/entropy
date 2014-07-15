@@ -28,12 +28,12 @@ import System.EntropyNix
 
 import qualified Data.ByteString as B
 
--- |Inefficiently get a specific number of bytes of cryptographically
+-- |Get a specific number of bytes of cryptographically
 -- secure random data using the system-specific facilities.
 --
--- Use '/dev/urandom' on *nix and CryptAPI when on Windows.  In short,
--- this entropy is considered cryptographically secure but not true
--- entropy.
+-- Use RDRAND if available or '/dev/urandom' on *nix and CryptAPI when on
+-- Windows.  In short, this entropy is considered cryptographically secure
+-- but not true entropy.
 getEntropy :: Int -> IO B.ByteString
 getEntropy n = do
     h <- openHandle
