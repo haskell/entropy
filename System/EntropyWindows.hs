@@ -20,6 +20,7 @@ import Foreign (allocaBytes)
 import Data.ByteString as B
 import Data.ByteString.Internal as BI
 import Data.Int (Int32)
+import Data.Bits (xor)
 import Data.Word (Word32, Word8)
 import Foreign.C.String (CString, withCString)
 import Foreign.C.Types
@@ -59,7 +60,7 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 data CryptHandle
     = CH Word32
 #ifdef HAVE_RDRAND
-    | UseRdRand
+    | UseRdRand Word32
 #endif
 
 -- Define the constants we need from WinCrypt.h 
@@ -107,22 +108,27 @@ openHandle :: IO CryptHandle
 openHandle = do
 #ifdef HAVE_RDRAND
     b <- cpuHasRdRand
-    if b then return UseRdRand
+    if b then UseRdRand `fmap` cryptAcquireCtx
          else do
 #endif
-                  liftM CH cryptAcquireCtx
+                  CH `fmap` cryptAcquireCtx
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
-closeHandle (CH h) = cryptReleaseCtx h
+closeHandle (CH h)        = cryptReleaseCtx h
+#ifdef HAVE_RDRAND
+closeHandle (UseRdRand h) = cryptReleaseCtx h
+#endif
 
 -- |Read from `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) n = cryptGenRandom h n
 #ifdef HAVE_RDRAND
-hGetEntropy UseRdRand n =
-    BI.create n $ \ptr ->  do
-                r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                when (r /= 0)
-                     (fail "RDRand failed to gather entropy")
+hGetEntropy (UseRdRand h) n =
+ do bsRDRAND <- BI.create n $ \ptr ->  do
+                  r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                  when (r /= 0)
+                       (fail "RDRand failed to gather entropy")
+    bsWinCrypt <- cryptGenRandom h n
+    return $ B.pack $ B.zipWith xor bsRDRAND bsWinCrypt
 #endif
