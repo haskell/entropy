@@ -8,10 +8,10 @@
 
  Currently supporting:
 
-    - Windows via CryptoAPO
+    - Windows via CryptoAPI
     - *nix systems via @\/dev\/urandom@
-    - QNX
-    - Xen only when RDRAND is available.
+       - Includes QNX
+    - Xen (only when RDRAND is available)
 -}
 
 module System.Entropy
@@ -21,9 +21,15 @@ module System.Entropy
         ) where
 import System.EntropyWindows
 #else
+#ifdef XEN
+         module System.EntropyXen
+        ) where
+import System.EntropyXen
+#else
          module System.EntropyNix
         ) where
 import System.EntropyNix
+#endif
 #endif
 
 import qualified Data.ByteString as B
@@ -31,7 +37,7 @@ import qualified Data.ByteString as B
 -- |Get a specific number of bytes of cryptographically
 -- secure random data using the system-specific facilities.
 --
--- Use RDRAND if available or '/dev/urandom' on *nix and CryptAPI when on
+-- Use RDRAND if available and XOR with '/dev/urandom' on *nix and CryptAPI when on
 -- Windows.  In short, this entropy is considered cryptographically secure
 -- but not true entropy.
 getEntropy :: Int -> IO B.ByteString

@@ -18,6 +18,7 @@ module System.EntropyNix
 import Control.Monad (liftM, when)
 import Data.ByteString as B
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
+import Data.Bits (xor)
 
 import Foreign (allocaBytes)
 import Foreign.Ptr
@@ -29,13 +30,6 @@ import Data.ByteString.Internal as B
 #undef HAVE_RDRAND
 #endif
 
-#ifdef XEN
-#ifndef HAVE_RDRAND
-#error "The entropy package requires RDRAND support when using the halvm/Xen"
-#endif
-data CryptHandle = UseRdRand -- or die trying
-#else
-
 import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
 
 source :: FilePath
@@ -45,8 +39,7 @@ source = "/dev/urandom"
 data CryptHandle
     = CH Fd
 #ifdef HAVE_RDRAND
-    | UseRdRand
-#endif
+    | UseRdRand Fd
 #endif
 
 -- |Open a `CryptHandle`
@@ -54,46 +47,31 @@ openHandle :: IO CryptHandle
 openHandle = do
 #ifdef HAVE_RDRAND
     b <- cpuHasRdRand
-    if b then return UseRdRand
-         else nonRDRandHandle
+    if b then UseRdRand `fmap` nonRDRandHandle
+         else CH `fmap` nonRDRandHandle
 #else
-              nonRDRandHandle
+              CH `fmap` nonRDRandHandle
 #endif
  where
-#ifdef XEN
-  nonRDRandHandle :: IO CryptHandle
-  nonRDRandHandle = error "entropy: On halvm there is no entropy other than RDRAND."
-#else
-  nonRDRandHandle :: IO CryptHandle
-  nonRDRandHandle = liftM CH (openFd source ReadOnly Nothing defaultFileFlags)
-#endif
+  nonRDRandHandle :: IO Fd
+  nonRDRandHandle = openFd source ReadOnly Nothing defaultFileFlags
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
-#ifndef XEN
 closeHandle (CH h) = closeFd h
-#endif
-#ifdef HAVE_RDRAND
-closeHandle UseRdRand = return ()
-#endif
+closeHandle (UseRdRand h) = closeFd h
 
 -- |Read random data from a `CryptHandle`
-#ifdef XEN
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
-hGetEntropy UseRdRand = \n -> do
-    B.create n $ \ptr ->  do
-                r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                when (r /= 0)
-                     (fail "RDRand failed to gather entropy")
-#else
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
 hGetEntropy (CH h) = fdReadBS h
 #ifdef HAVE_RDRAND
-hGetEntropy UseRdRand = \n -> do
-    B.create n $ \ptr ->  do
-                r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                when (r /= 0)
-                     (fail "RDRand failed to gather entropy")
+hGetEntropy (UseRdRand h) = \n ->
+ do bsURandom <- fdReadBS h n
+    bsRDRAND  <- B.create n $ \ptr ->  do
+                  r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                  when (r /= 0)
+                       (fail "RDRand failed to gather entropy")
+    return $ B.pack $ B.zipWith xor bsURandom bsRDRAND
 #endif
 
 fdReadBS :: Fd -> Int -> IO B.ByteString
@@ -103,8 +81,6 @@ fdReadBS fd n = do
         case rc of
             0 -> ioError (ioeSetErrorString (mkIOError eofErrorType "fdRead" Nothing Nothing) "EOF")
             n' -> B.packCStringLen (castPtr buf, fromIntegral n')
-#endif
-
 
 #ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
