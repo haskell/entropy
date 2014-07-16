@@ -59,7 +59,9 @@ openHandle = do
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h) = closeFd h
+#ifdef HAVE_RDRAND
 closeHandle (UseRdRand h) = closeFd h
+#endif
 
 -- |Read random data from a `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
