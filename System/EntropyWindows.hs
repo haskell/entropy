@@ -118,6 +118,8 @@ closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h)        = cryptReleaseCtx h
 #ifdef HAVE_RDRAND
 closeHandle (UseRdRand h) = cryptReleaseCtx h
+#else
+closeHandle _ = return ()
 #endif
 
 -- |Read from `CryptHandle`
