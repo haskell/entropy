@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Setup
@@ -9,6 +10,11 @@ import System.Process
 import System.Directory
 import System.FilePath
 import System.Exit
+
+#if __GLASGOW_HASKELL__ < 702
+import Control.Monad
+import System.IO
+#endif
 
 main = defaultMainWithHooks hk
  where
@@ -30,6 +36,28 @@ cArgs = ["-DHAVE_RDRAND"]
 
 cArgsHC :: [String]
 cArgsHC = cArgs ++ map ("-optc" ++) cArgs
+
+
+
+
+#if __GLASGOW_HASKELL__ < 702
+printRawCommandAndArgs :: Verbosity -> FilePath -> [String] -> IO ()
+printRawCommandAndArgs verbosity path args
+ | verbosity >= deafening = print (path, args)
+ | verbosity >= verbose   = putStrLn $ unwords (path : args)
+ | otherwise              = return ()
+
+rawSystemExitCode :: Verbosity -> FilePath -> [String] -> IO ExitCode
+rawSystemExitCode verbosity path args = do
+  printRawCommandAndArgs verbosity path args
+  hFlush stdout
+  exitcode <- rawSystem path args
+  unless (exitcode == ExitSuccess) $ do
+    debug verbosity $ path ++ " returned " ++ show exitcode
+  return exitcode
+#endif
+
+
 
 canUseRDRAND :: FilePath -> IO Bool
 canUseRDRAND cc = do
