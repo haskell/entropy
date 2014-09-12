@@ -18,7 +18,7 @@ stability:      stable
 -- ^^ Used for HaLVM
 build-type:        Custom
 -- ^^ Test for RDRAND support using 'ghc'
-cabal-version:  >=1.10
+cabal-version:  >=1.17
 tested-with:    GHC == 7.8.2
 -- data-files:
 extra-source-files:   ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
