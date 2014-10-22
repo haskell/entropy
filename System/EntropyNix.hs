@@ -77,12 +77,16 @@ hGetEntropy (UseRdRand h) = \n ->
 #endif
 
 fdReadBS :: Fd -> Int -> IO B.ByteString
-fdReadBS fd n = do
-    allocaBytes n $ \buf -> do
-        rc <- fdReadBuf fd buf (fromIntegral n)
+fdReadBS fd n =
+    allocaBytes n $ \buf -> go buf (fromIntegral n)
+ where
+ go buf 0   = B.packCStringLen (castPtr buf, fromIntegral n)
+ go buf cnt  | cnt < n = do
+        rc <- fdReadBuf fd (plusPtr buf (n - cnt)) (fromIntegral cnt)
         case rc of
             0 -> ioError (ioeSetErrorString (mkIOError eofErrorType "fdRead" Nothing Nothing) "EOF")
-            n' -> B.packCStringLen (castPtr buf, fromIntegral n')
+            n' -> go buf (cnt - fromIntegral n')
+ go _ _     = error "Impossible!  The count of bytes left to read is greater than the request or less than zero!"
 
 #ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
