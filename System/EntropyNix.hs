@@ -78,10 +78,10 @@ hGetEntropy (UseRdRand h) = \n ->
 
 fdReadBS :: Fd -> Int -> IO B.ByteString
 fdReadBS fd n =
-    allocaBytes n $ \buf -> go buf (fromIntegral n)
+    allocaBytes n $ \buf -> go buf n
  where
  go buf 0   = B.packCStringLen (castPtr buf, fromIntegral n)
- go buf cnt  | cnt < n = do
+ go buf cnt  | cnt <= n = do
         rc <- fdReadBuf fd (plusPtr buf (n - cnt)) (fromIntegral cnt)
         case rc of
             0 -> ioError (ioeSetErrorString (mkIOError eofErrorType "fdRead" Nothing Nothing) "EOF")
