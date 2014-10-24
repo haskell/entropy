@@ -14,21 +14,11 @@ category:       Data, Cryptography
 homepage:       https://github.com/TomMD/entropy
 bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
--- build-type:  Simple
--- ^^ Used for HaLVM
-build-type:        Custom
--- ^^ Test for RDRAND support using 'ghc'
+build-type:     Configure
 cabal-version:  >=1.17
 tested-with:    GHC == 7.8.2
 -- data-files:
 extra-source-files:   ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
-
--- Notice to compile  with HaLVM the above 'build-type' must be changed
--- to 'Simple' instead of 'Custom'.  The current build system naively
--- runs GHC to determine if the compiler supports RDRAND before proceeding.
-flag halvm
-    description:        Build for the HaLVM
-    default:            False
 
 library
   ghc-options:  -O2
@@ -36,7 +26,7 @@ library
   if os(windows)
     other-modules: System.EntropyWindows
   else {
-       if os(halvm)
+       if os(HaLVM)
          other-modules: System.EntropyXen
        else
          other-modules: System.EntropyNix
@@ -44,7 +34,7 @@ library
   other-extensions:    CPP, ForeignFunctionInterface, BangPatterns, ScopedTypeVariables
   build-depends: base == 4.*, bytestring
   default-language:    Haskell2010
-  if(os(halvm))
+  if(os(HaLVM))
     cpp-options: -DXEN -DHAVE_RDRAND
     cc-options:  -DXEN -DHAVE_RDRAND
   if arch(x86_64)
@@ -61,7 +51,7 @@ library
     cc-options:  -DisWindows
     extra-libraries: advapi32
   else
-    if !os(halvm)
+    if !os(HaLVM)
        Build-Depends: unix
 
 source-repository head
