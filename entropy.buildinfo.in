@@ -1,0 +1,2 @@
+cc-options: @RDRAND_CFLAG@
+ghc-options: @RDRAND_CFLAG@ @RDRAND_GHCFLAG@
