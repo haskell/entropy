@@ -42,7 +42,7 @@ library
          other-modules: System.EntropyNix
   }
   other-extensions:    CPP, ForeignFunctionInterface, BangPatterns, ScopedTypeVariables
-  build-depends: base == 4.*, bytestring
+  build-depends: base >= 4.5 && < 5, bytestring
   default-language:    Haskell2010
   if(os(halvm))
     cpp-options: -DXEN -DHAVE_RDRAND
