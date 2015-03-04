@@ -46,6 +46,11 @@ import Foreign.Storable (peek)
 -}
 
 
+#ifdef arch_i386
+-- See .cabal wrt GCC 4.8.2 asm compilation bug
+#undef HAVE_RDRAND
+#endif
+
 #ifdef HAVE_RDRAND
 foreign import ccall unsafe "cpu_has_rdrand"
    c_cpu_has_rdrand :: IO CInt
