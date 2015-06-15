@@ -13,7 +13,7 @@ int cpu_has_rdrand()
 
 #ifdef arch_x86_64
 // Returns 1 on success
-inline int _rdrand64_step(uint64_t *therand)
+static inline int _rdrand64_step(uint64_t *therand)
 {
      unsigned char err;
      asm volatile("rdrand %0 ; setc %1"
@@ -56,7 +56,7 @@ int get_rand_bytes(uint8_t *therand, size_t len)
 
 #ifdef arch_i386
 // Returns 1 on success
-inline int _rdrand32_step(uint32_t *therand)
+static inline int _rdrand32_step(uint32_t *therand)
 {
      unsigned char err;
      asm volatile("rdrand %0 ; setc %1"
