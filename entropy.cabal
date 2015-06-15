@@ -1,5 +1,5 @@
 name:           entropy
-version:        0.3.6
+version:        0.3.7
 description:    A platform independent method to obtain cryptographically strong entropy
                 (RDRAND when available anywhere, urandom on nix, CryptAPI on Windows, patches welcome)
                 Users looking for cryptographically strong (number-theoretically
@@ -49,13 +49,13 @@ library
     cc-options:  -DXEN -DHAVE_RDRAND
   if arch(x86_64)
     cpp-options: -Darch_x86_64
-    cc-options:  -Darch_x86_64
+    cc-options:  -Darch_x86_64 -O2
     -- gcc 4.8.2 on i386 fails to compile rdrand.c when using -fPIC!
     c-sources:    cbits/rdrand.c
     include-dirs: cbits
   if arch(i386)
     cpp-options: -Darch_i386
-    cc-options:  -Darch_i386
+    cc-options:  -Darch_i386 -O2
   if os(windows)
     cpp-options: -DisWindows
     cc-options:  -DisWindows
