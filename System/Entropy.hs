@@ -33,6 +33,7 @@ import System.EntropyNix
 #endif
 
 import qualified Data.ByteString as B
+import Control.Exception (bracket)
 
 -- |Get a specific number of bytes of cryptographically
 -- secure random data using the system-specific facilities.
@@ -41,8 +42,4 @@ import qualified Data.ByteString as B
 -- Windows.  In short, this entropy is considered cryptographically secure
 -- but not true entropy.
 getEntropy :: Int -> IO B.ByteString
-getEntropy n = do
-    h <- openHandle
-    e <- hGetEntropy h n
-    closeHandle h
-    return e
+getEntropy = bracket openHandle closeHandle . flip hGetEntropy
