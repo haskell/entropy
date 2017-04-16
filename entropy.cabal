@@ -16,7 +16,7 @@ bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 -- build-type:  Simple
 -- ^^ Used for HaLVM
-build-type:        Custom
+build-type:        Simple
 -- ^^ Test for RDRAND support using 'ghc'
 cabal-version:  >=1.10
 tested-with:    GHC == 7.8.2
