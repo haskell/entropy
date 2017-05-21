@@ -30,6 +30,14 @@ flag halvm
     description:        Build for the HaLVM
     default:            False
 
+
+custom-setup
+  setup-depends: Cabal >= 1.10 && < 2.2
+               , base < 5
+               , filepath < 1.5
+               , directory < 1.4
+               , process < 1.7
+
 library
   ghc-options:  -O2
   exposed-modules: System.Entropy
