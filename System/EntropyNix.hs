@@ -35,7 +35,7 @@ import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags,
 source :: FilePath
 source = "/dev/urandom"
 
--- |Handle for manual resource mangement
+-- |Handle for manual resource management
 data CryptHandle
     = CH Fd
 #ifdef HAVE_RDRAND
