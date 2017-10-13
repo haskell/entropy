@@ -13,6 +13,7 @@ module System.EntropyNix
         , openHandle
         , hGetEntropy
         , closeHandle
+        , hardwareRNG
         ) where
 
 import Control.Monad (liftM, when)
@@ -38,20 +39,29 @@ source = "/dev/urandom"
 -- |Handle for manual resource management
 data CryptHandle
     = CH Fd
+
+-- | Get random values from the hardward RNG or return Nothing if no
+-- supported hardware RNG is available.
+--
+-- Supported hardware:
+--      * RDRAND
+--      * Patches welcome
+hardwareRNG :: Int -> IO (Maybe B.ByteString)
 #ifdef HAVE_RDRAND
-    | UseRdRand Fd
+hardwareRNG n =
+ do b <- cpuHasRdRand
+    if b
+     then Just <$> B.create n (\ptr ->
+                      do r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                         when (r /= 0) (fail "RDRand failed to gather entropy"))
+     else pure Nothing
+#else
+hardwareRNG _ = pure Nothing
 #endif
 
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
-openHandle = do
-#ifdef HAVE_RDRAND
-    b <- cpuHasRdRand
-    if b then UseRdRand `fmap` nonRDRandHandle
-         else CH `fmap` nonRDRandHandle
-#else
-              CH `fmap` nonRDRandHandle
-#endif
+openHandle = do CH `fmap` nonRDRandHandle
  where
   nonRDRandHandle :: IO Fd
   nonRDRandHandle = openFd source ReadOnly Nothing defaultFileFlags
@@ -59,22 +69,10 @@ openHandle = do
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h) = closeFd h
-#ifdef HAVE_RDRAND
-closeHandle (UseRdRand h) = closeFd h
-#endif
 
 -- |Read random data from a `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
 hGetEntropy (CH h) = fdReadBS h
-#ifdef HAVE_RDRAND
-hGetEntropy (UseRdRand h) = \n ->
- do bsURandom <- fdReadBS h n
-    bsRDRAND  <- B.create n $ \ptr ->  do
-                  r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                  when (r /= 0)
-                       (fail "RDRand failed to gather entropy")
-    return $ B.pack $ B.zipWith xor bsURandom bsRDRAND
-#endif
 
 fdReadBS :: Fd -> Int -> IO B.ByteString
 fdReadBS fd n =

@@ -4,7 +4,7 @@
  Stability: beta
  Portability: portable
 
- Obtain entropy from system sources or x86 RDRAND when available.
+ Obtain entropy from RDRAND when available.
 
 -}
 
@@ -13,6 +13,7 @@ module System.EntropyXen
         , openHandle
         , hGetEntropy
         , closeHandle
+        , hardwardRNG
         ) where
 
 import Control.Monad (liftM, when)
@@ -48,7 +49,16 @@ openHandle = do
 closeHandle :: CryptHandle -> IO ()
 closeHandle UseRdRand = return ()
 
--- |Read random data from a `CryptHandle`
+-- | Get random values from the hardward RNG or return Nothing if no
+-- supported hardware RNG is available.
+--
+-- Supported hardware:
+--      * RDRAND
+--      * Patches welcome
+hardwareRNG :: Int -> IO (Maybe B.ByteString)
+hardwareRNG sz = Just <$> hGetEntropy UseRdRand sz
+
+-- |Read random data from a `CryptHandle`, which uses RDRAND (when on Xen)
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
 hGetEntropy UseRdRand = \n -> do
     B.create n $ \ptr ->  do

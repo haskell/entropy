@@ -4,7 +4,7 @@
  Stability: beta
  Portability: portable
 
- Obtain entropy from system sources or x86 RDRAND when available.
+ Obtain entropy from system sources.
 -}
 
 module System.EntropyWindows
@@ -12,6 +12,7 @@ module System.EntropyWindows
         , openHandle
         , hGetEntropy
         , closeHandle
+        , hardwareRNG
         ) where
 
 import Control.Monad (liftM, when)
@@ -64,8 +65,25 @@ cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 
 data CryptHandle
     = CH Word32
+
+
+-- | Get random values from the hardward RNG or return Nothing if no
+-- supported hardware RNG is available.
+--
+-- Supported hardware:
+--      * RDRAND
+--      * Patches welcome
+hardwareRNG :: Int -> IO (Maybe B.ByteString)
 #ifdef HAVE_RDRAND
-    | UseRdRand Word32
+hardwareRNG n =
+  do b <- cpuHasRdRand
+     if b
+        then Just <$> BI.create n (\ptr ->
+                        do r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
+                           when (r /= 0) (fail "RDRand failed to gather entropy"))
+        else pure Nothing
+#else
+hardwareRNG _ = pure Nothing
 #endif
 
 -- Define the constants we need from WinCrypt.h 
@@ -110,30 +128,12 @@ cryptReleaseCtx h = do
 
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
-openHandle = do
-#ifdef HAVE_RDRAND
-    b <- cpuHasRdRand
-    if b then UseRdRand `fmap` cryptAcquireCtx
-         else do
-#endif
-                  CH `fmap` cryptAcquireCtx
+openHandle = CH `fmap` cryptAcquireCtx
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h)        = cryptReleaseCtx h
-#ifdef HAVE_RDRAND
-closeHandle (UseRdRand h) = cryptReleaseCtx h
-#endif
 
 -- |Read from `CryptHandle`
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
 hGetEntropy (CH h) n = cryptGenRandom h n
-#ifdef HAVE_RDRAND
-hGetEntropy (UseRdRand h) n =
- do bsRDRAND <- BI.create n $ \ptr ->  do
-                  r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
-                  when (r /= 0)
-                       (fail "RDRand failed to gather entropy")
-    bsWinCrypt <- cryptGenRandom h n
-    return $ B.pack $ B.zipWith xor bsRDRAND bsWinCrypt
-#endif

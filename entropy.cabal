@@ -1,5 +1,5 @@
 name:           entropy
-version:        0.3.8
+version:        0.4
 description:    A platform independent method to obtain cryptographically strong entropy
                 (RDRAND when available anywhere, urandom on nix, CryptAPI on Windows, patches welcome)
                 Users looking for cryptographically strong (number-theoretically
@@ -16,10 +16,10 @@ bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 -- build-type:  Simple
 -- ^^ Used for HaLVM
-build-type:        Custom
+build-type:     Custom
 -- ^^ Test for RDRAND support using 'ghc'
 cabal-version:  >=1.10
-tested-with:    GHC == 7.8.2
+tested-with:    GHC == 8.2.1
 -- data-files:
 extra-source-files:   ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
 
