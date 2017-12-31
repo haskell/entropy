@@ -55,8 +55,8 @@ closeHandle UseRdRand = return ()
 -- Supported hardware:
 --      * RDRAND
 --      * Patches welcome
-hardwareRNG :: Int -> IO (Maybe B.ByteString)
-hardwareRNG sz = Just <$> hGetEntropy UseRdRand sz
+hardwareRandom :: Int -> IO (Maybe B.ByteString)
+hardwareRandom sz = Just <$> hGetEntropy UseRdRand sz
 
 -- |Read random data from a `CryptHandle`, which uses RDRAND (when on Xen)
 hGetEntropy :: CryptHandle -> Int -> IO B.ByteString

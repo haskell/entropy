@@ -12,7 +12,7 @@ module System.EntropyWindows
         , openHandle
         , hGetEntropy
         , closeHandle
-        , hardwareRNG
+        , hardwareRandom
         ) where
 
 import Control.Monad (liftM, when)
@@ -73,9 +73,9 @@ data CryptHandle
 -- Supported hardware:
 --      * RDRAND
 --      * Patches welcome
-hardwareRNG :: Int -> IO (Maybe B.ByteString)
+hardwareRandom :: Int -> IO (Maybe B.ByteString)
 #ifdef HAVE_RDRAND
-hardwareRNG n =
+hardwareRandom n =
   do b <- cpuHasRdRand
      if b
         then Just <$> BI.create n (\ptr ->
@@ -83,7 +83,7 @@ hardwareRNG n =
                            when (r /= 0) (fail "RDRand failed to gather entropy"))
         else pure Nothing
 #else
-hardwareRNG _ = pure Nothing
+hardwareRandom _ = pure Nothing
 #endif
 
 -- Define the constants we need from WinCrypt.h 
@@ -135,5 +135,5 @@ closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h)        = cryptReleaseCtx h
 
 -- |Read from `CryptHandle`
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString 
+hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
 hGetEntropy (CH h) n = cryptGenRandom h n

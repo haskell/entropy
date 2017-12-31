@@ -16,18 +16,18 @@
 
 module System.Entropy
         ( getEntropy,
-#if defined(isWindows)
-         module System.EntropyWindows
+          getHardwareEntropy,
+          CryptHandle,
+          openHandle,
+          hGetEntropy,
+          closeHandle
         ) where
+#if defined(isWindows)
 import System.EntropyWindows
 #else
 #ifdef XEN
-         module System.EntropyXen
-        ) where
 import System.EntropyXen
 #else
-         module System.EntropyNix
-        ) where
 import System.EntropyNix
 #endif
 #endif
@@ -36,10 +36,42 @@ import qualified Data.ByteString as B
 import Control.Exception (bracket)
 
 -- |Get a specific number of bytes of cryptographically
--- secure random data using the system-specific facilities.
+-- secure random data using the *system-specific* sources. 
+-- (As of 0.4.  Verions <0.4 mixed system and hardware sources)
 --
--- Use RDRAND if available and XOR with '/dev/urandom' on *nix and CryptAPI when on
--- Windows.  In short, this entropy is considered cryptographically secure
--- but not true entropy.
-getEntropy :: Int -> IO B.ByteString
+-- The returned random value is considered cryptographically secure but not true entropy.
+--
+-- On some platforms this requies a file handle which can lead to resource
+-- exhaustion in some situations.
+getEntropy :: Int               -- ^ Number of bytes
+           -> IO B.ByteString
 getEntropy = bracket openHandle closeHandle . flip hGetEntropy
+
+-- |Get a specific number of bytes of cryptographically
+-- secure random data using a supported *hardware* random bit generator.
+--
+-- If there is no hardware random number generator then @Nothing@ is returned.
+-- If any call returns non-Nothing then it should never be @Nothing@ unless
+-- there has been a hardware failure.
+--
+-- If trust of the CPU allows it and no context switching is important,
+-- a bias to the hardware rng with system rng as fall back is trivial:
+--
+-- @
+-- let fastRandom nr = maybe (getEntropy nr) pure =<< getHardwareEntropy nr
+-- @
+--
+-- The old, @<0.4@, behavior is possible using @xor@ from 'Data.Bits':
+--
+-- @
+-- let oldRandom nr =
+--      do hwRnd  <- maybe (replicate nr 0) BS.unpack <$> getHardwareEntropy nr
+--         sysRnd <- BS.unpack <$> getEntropy nr
+--         pure $ BS.pack $ zipWith xor sysRnd hwRnd
+-- @
+--
+-- A less maliable mixing can be accomplished by replacing `xor` with a
+-- composition of concat and cryptographic hash.
+getHardwareEntropy :: Int                       -- ^ Number of bytes
+                   -> IO (Maybe B.ByteString)
+getHardwareEntropy = hardwareRandom
