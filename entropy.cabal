@@ -1,5 +1,5 @@
 name:           entropy
-version:        0.4.1.1
+version:        0.4.1.2
 description:    A mostly platform independent (not GHCJS) method to obtain cryptographically strong entropy
                 (RDRAND, urandom, CryptAPI, and patches welcome)
                 Users looking for cryptographically strong (number-theoretically
