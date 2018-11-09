@@ -66,6 +66,7 @@ library
     cpp-options: -Darch_i386
     cc-options:  -Darch_i386 -O2
   if os(windows)
+    build-depends: Win32
     cpp-options: -DisWindows
     cc-options:  -DisWindows
     extra-libraries: advapi32
