@@ -17,6 +17,7 @@ module System.EntropyWindows
 
 import Control.Monad (liftM, when)
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
+import System.Win32.Types (ULONG_PTR, errorWin)
 import Foreign (allocaBytes)
 import Data.ByteString as B
 import Data.ByteString.Internal as BI
@@ -63,8 +64,9 @@ cpuHasRdRand :: IO Bool
 cpuHasRdRand = (/= 0) `fmap` c_cpu_has_rdrand
 #endif
 
+type HCRYPTPROV = ULONG_PTR
 data CryptHandle
-    = CH Word32
+    = CH HCRYPTPROV
 
 
 -- | Get random values from the hardward RNG or return Nothing if no
@@ -86,7 +88,7 @@ hardwareRandom n =
 hardwareRandom _ = pure Nothing
 #endif
 
--- Define the constants we need from WinCrypt.h 
+-- Define the constants we need from WinCrypt.h
 msDefProv :: String
 msDefProv = "Microsoft Base Cryptographic Provider v1.0"
 provRSAFull :: Word32
@@ -94,37 +96,37 @@ provRSAFull = 1
 cryptVerifyContext :: Word32
 cryptVerifyContext = fromIntegral 0xF0000000
 
--- Declare the required CryptoAPI imports 
+-- Declare the required CryptoAPI imports
 foreign import stdcall unsafe "CryptAcquireContextA"
-   c_cryptAcquireCtx :: Ptr Word32 -> CString -> CString -> Word32 -> Word32 -> IO Int32
+   c_cryptAcquireCtx :: Ptr HCRYPTPROV -> CString -> CString -> Word32 -> Word32 -> IO Int32
 foreign import stdcall unsafe "CryptGenRandom"
-   c_cryptGenRandom :: Word32 -> Word32 -> Ptr Word8 -> IO Int32
+   c_cryptGenRandom :: HCRYPTPROV -> Word32 -> Ptr Word8 -> IO Int32
 foreign import stdcall unsafe "CryptReleaseContext"
-   c_cryptReleaseCtx :: Word32 -> Word32 -> IO Int32
+   c_cryptReleaseCtx :: HCRYPTPROV -> Word32 -> IO Int32
 
-cryptAcquireCtx :: IO Word32
+cryptAcquireCtx :: IO HCRYPTPROV
 cryptAcquireCtx =
-   alloca $ \handlePtr -> 
+   alloca $ \handlePtr ->
       withCString msDefProv $ \provName -> do
          stat <- c_cryptAcquireCtx handlePtr nullPtr provName provRSAFull cryptVerifyContext
          if (toBool stat)
             then peek handlePtr
-            else fail "c_cryptAcquireCtx"
+            else errorWin "c_cryptAcquireCtx"
 
-cryptGenRandom :: Word32 -> Int -> IO B.ByteString
-cryptGenRandom h i = 
+cryptGenRandom :: HCRYPTPROV -> Int -> IO B.ByteString
+cryptGenRandom h i =
    BI.create i $ \c_buffer -> do
       stat <- c_cryptGenRandom h (fromIntegral i) c_buffer
       if (toBool stat)
          then return ()
-         else fail "c_cryptGenRandom"
+         else errorWin "c_cryptGenRandom"
 
-cryptReleaseCtx :: Word32 -> IO ()
+cryptReleaseCtx :: HCRYPTPROV -> IO ()
 cryptReleaseCtx h = do
    stat <- c_cryptReleaseCtx h 0
    if (toBool stat)
       then return ()
-      else fail "c_cryptReleaseCtx"
+      else errorWin "c_cryptReleaseCtx"
 
 -- |Open a handle from which random data can be read
 openHandle :: IO CryptHandle
