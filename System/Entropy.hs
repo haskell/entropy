@@ -22,21 +22,22 @@ module System.Entropy
           hGetEntropy,
           closeHandle
         ) where
-#if defined(isWindows)
+
+#ifdef ghcjs_HOST_OS
+import System.EntropyGhcjs
+#elif defined(isWindows)
 import System.EntropyWindows
-#else
-#ifdef XEN
+#elif XEN
 import System.EntropyXen
 #else
 import System.EntropyNix
-#endif
 #endif
 
 import qualified Data.ByteString as B
 import Control.Exception (bracket)
 
 -- |Get a specific number of bytes of cryptographically
--- secure random data using the *system-specific* sources. 
+-- secure random data using the *system-specific* sources.
 -- (As of 0.4.  Verions <0.4 mixed system and hardware sources)
 --
 -- The returned random value is considered cryptographically secure but not true entropy.
