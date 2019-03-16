@@ -60,6 +60,7 @@ library
   build-depends:       base >= 4.8 && < 5, bytestring
 
   default-language:    Haskell2010
+  
   if impl(ghcjs) {
     build-depends:     ghcjs-dom
                      , jsaddle
@@ -78,7 +79,7 @@ library
       cpp-options: -Darch_i386
       cc-options:  -Darch_i386 -O2
     if os(windows)
-      build-depends: Win32
+      build-depends: Win32 >= 2.5
       cpp-options: -DisWindows
       cc-options:  -DisWindows
       extra-libraries: advapi32
@@ -86,6 +87,7 @@ library
       if !os(halvm)
          Build-Depends: unix
   }
+
 
 source-repository head
     type:       git
