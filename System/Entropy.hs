@@ -12,6 +12,7 @@
     - *nix systems via @\/dev\/urandom@
        - Includes QNX
     - Xen (only when RDRAND is available)
+    - ghcjs/browser via JavaScript crypto API.
 -}
 
 module System.Entropy
