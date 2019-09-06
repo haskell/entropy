@@ -5,17 +5,37 @@ security applications by calling out to either windows crypto api, unix/linux's
 `/dev/urandom`. Hardware RNGs (currently RDRAND, patches welcome) are supported
 via the `hardwareRNG` function.
 
-If you wish to obtain an XOR of the hardware and system RNG consider:
+## Quick Start
+
+To simply get random bytes use `getEntropy`:
 
 ```
-import           Data.Bits (xor)
-import qualified Data.ByteString as B
-import qualified Control.Exception as X
+#!/usr/bin/env cabal
+{- cabal:
+    build-depends: base, entropy, bytestring
+-}
+import qualified Data.ByteString as BS
+import           System.Entropy
 
-xorRNG sz = do hw  <- hardwareRNG sz
-               h   <- openHandle
-               sys <- hGetEntropy h `X.finally` closeHandle h
-               pure $ B.pack $ B.zipWith xor hw sys
+main :: IO ()
+main = print . BS.unpack =<< getEntropy 16
+-- Example output: [241,191,215,193,225,27,121,244,16,155,252,41,131,38,6,100]
+```
+
+## Faster Randoms from Hardware
+
+Most x86 systems include a hardware random number generator.  These can be
+faster but require more trust in the platform:
+
+```
+import qualified Data.ByteString as B
+import           System.Entropy
+
+eitherRNG :: Int -> IO B.ByteString
+eitherRNG sz = maybe (getEntropy sz) pure =<< getHardwareEntropy sz
+
+main :: IO ()
+main = print . B.unpack =<< eitherRNG 32
 ```
 
 This package supports Windows, {li,u}nix, QNX, and has preliminary support for HaLVM.
