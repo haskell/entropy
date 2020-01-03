@@ -28,7 +28,7 @@ compileCheck :: FilePath -> String -> String -> String -> IO Bool
 compileCheck cc testName message sourceCode = do
         withTempDirectory normal "" testName $ \tmpDir -> do
         writeFile (tmpDir ++ "/" ++ testName ++ ".c") sourceCode
-        ec <- myRawSystemExitCode normal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a.o","-c"]
+        ec <- myRawSystemExitCode normal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a","-no-hs-main"]
         notice normal $ message ++ show (ec == ExitSuccess)
         return (ec == ExitSuccess)
 
