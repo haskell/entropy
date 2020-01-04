@@ -18,7 +18,7 @@ module System.EntropyNix
 
 import Control.Exception
 import Control.Monad (liftM, when)
-import Data.ByteString as B
+import Data.ByteArray as B
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
 import System.IO.Unsafe
 import Data.Bits (xor)
@@ -27,7 +27,6 @@ import Foreign (allocaBytes)
 import Foreign.Ptr
 import Foreign.C.Error
 import Foreign.C.Types
-import Data.ByteString.Internal as B
 
 #ifdef arch_i386
 -- See .cabal wrt GCC 4.8.2 asm compilation bug
@@ -52,7 +51,7 @@ data CryptHandle
 -- Supported hardware:
 --      * RDRAND
 --      * Patches welcome
-hardwareRandom :: Int -> IO (Maybe B.ByteString)
+hardwareRandom :: B.ByteArray b => Int -> IO (Maybe b)
 #ifdef HAVE_RDRAND
 hardwareRandom n =
  do b <- cpuHasRdRand
@@ -85,23 +84,21 @@ closeHandle UseGetRandom = return ()
 #endif
 
 -- |Read random data from a `CryptHandle`
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+hGetEntropy :: B.ByteArray b => CryptHandle -> Int -> IO b
 hGetEntropy (CH h) n = fdReadBS h n
 #ifdef HAVE_GETRANDOM
 hGetEntropy UseGetRandom n = do
-  bs <- B.createUptoN n (\ptr -> do
-    r <- c_entropy_getrandom (castPtr ptr) (fromIntegral n)
-    return $ if r == 0 then n else 0)
-  if B.length bs == n then return bs
+  (r, bs) <- B.allocRet n (\ptr -> c_entropy_getrandom (castPtr ptr) (fromIntegral n))
+  if r == 0 then return bs
   -- getrandom somehow failed. Fall back on /dev/urandom instead.
   else bracket openRandomFile closeFd $ flip fdReadBS n
 #endif
 
-fdReadBS :: Fd -> Int -> IO B.ByteString
+fdReadBS :: B.ByteArray b => Fd -> Int -> IO b
 fdReadBS fd n =
-    allocaBytes n $ \buf -> go buf n
+    B.alloc n $ \buf -> go buf n
  where
- go buf 0   = B.packCStringLen (castPtr buf, fromIntegral n)
+ go buf 0   = return ()
  go buf cnt  | cnt <= n = do
         rc <- fdReadBuf fd (plusPtr buf (n - cnt)) (fromIntegral cnt)
         case rc of

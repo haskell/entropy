@@ -19,8 +19,7 @@ import Control.Monad (liftM, when)
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
 import System.Win32.Types (ULONG_PTR, errorWin)
 import Foreign (allocaBytes)
-import Data.ByteString as B
-import Data.ByteString.Internal as BI
+import Data.ByteArray as B
 import Data.Int (Int32)
 import Data.Bits (xor)
 import Data.Word (Word32, Word8)
@@ -75,12 +74,12 @@ data CryptHandle
 -- Supported hardware:
 --      * RDRAND
 --      * Patches welcome
-hardwareRandom :: Int -> IO (Maybe B.ByteString)
+hardwareRandom :: B.ByteArray b => Int -> IO (Maybe b)
 #ifdef HAVE_RDRAND
 hardwareRandom n =
   do b <- cpuHasRdRand
      if b
-        then Just <$> BI.create n (\ptr ->
+        then Just <$> B.create n (\ptr ->
                         do r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)
                            when (r /= 0) (fail "RDRand failed to gather entropy"))
         else pure Nothing
@@ -113,9 +112,9 @@ cryptAcquireCtx =
             then peek handlePtr
             else errorWin "c_cryptAcquireCtx"
 
-cryptGenRandom :: HCRYPTPROV -> Int -> IO B.ByteString
+cryptGenRandom :: B.ByteArray b => HCRYPTPROV -> Int -> IO b
 cryptGenRandom h i =
-   BI.create i $ \c_buffer -> do
+   B.create i $ \c_buffer -> do
       stat <- c_cryptGenRandom h (fromIntegral i) c_buffer
       if (toBool stat)
          then return ()
@@ -137,5 +136,5 @@ closeHandle :: CryptHandle -> IO ()
 closeHandle (CH h)        = cryptReleaseCtx h
 
 -- |Read from `CryptHandle`
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+hGetEntropy :: B.ByteArray b => CryptHandle -> Int -> IO b
 hGetEntropy (CH h) n = cryptGenRandom h n

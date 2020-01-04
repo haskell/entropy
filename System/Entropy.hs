@@ -34,7 +34,7 @@ import System.EntropyXen
 import System.EntropyNix
 #endif
 
-import qualified Data.ByteString as B
+import qualified Data.ByteArray as B
 import Control.Exception (bracket)
 
 -- |Get a specific number of bytes of cryptographically
@@ -45,8 +45,9 @@ import Control.Exception (bracket)
 --
 -- On some platforms this requies a file handle which can lead to resource
 -- exhaustion in some situations.
-getEntropy :: Int               -- ^ Number of bytes
-           -> IO B.ByteString
+getEntropy :: B.ByteArray b
+           => Int               -- ^ Number of bytes
+           -> IO b
 getEntropy = bracket openHandle closeHandle . flip hGetEntropy
 
 -- |Get a specific number of bytes of cryptographically
@@ -74,6 +75,7 @@ getEntropy = bracket openHandle closeHandle . flip hGetEntropy
 --
 -- A less maliable mixing can be accomplished by replacing `xor` with a
 -- composition of concat and cryptographic hash.
-getHardwareEntropy :: Int                       -- ^ Number of bytes
-                   -> IO (Maybe B.ByteString)
+getHardwareEntropy :: B.ByteArray b
+                   => Int                       -- ^ Number of bytes
+                   -> IO (Maybe b)
 getHardwareEntropy = hardwareRandom

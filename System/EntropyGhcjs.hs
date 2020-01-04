@@ -15,7 +15,7 @@ module System.EntropyGhcjs
         , hardwareRandom
         ) where
 
-import Data.ByteString as B
+import Data.ByteArray as B
 import GHCJS.DOM.Crypto as Crypto
 import GHCJS.DOM.Types (ArrayBufferView (..), fromJSValUnchecked)
 import GHCJS.DOM.GlobalCrypto (getCrypto)
@@ -30,7 +30,7 @@ newtype CryptHandle = CH Crypto
 -- supported hardware RNG is available.
 --
 -- Not supported on ghcjs.
-hardwareRandom :: Int -> IO (Maybe B.ByteString)
+hardwareRandom :: B.ByteArray b => Int -> IO (Maybe b)
 hardwareRandom _ = pure Nothing
 
 -- |Open a `CryptHandle`
@@ -44,7 +44,7 @@ closeHandle :: CryptHandle -> IO ()
 closeHandle _ = pure ()
 
 -- |Read random data from a `CryptHandle`
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+hGetEntropy :: B.ByteArray b => CryptHandle -> Int -> IO b
 hGetEntropy (CH h) n = do
   arr <- JS.new (jsg "Int8Array") [n]
   getRandomValues_ h (ArrayBufferView arr)

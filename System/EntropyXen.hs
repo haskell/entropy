@@ -17,13 +17,12 @@ module System.EntropyXen
         ) where
 
 import Control.Monad (liftM, when)
-import Data.ByteString as B
+import Data.ByteArray as B
 import System.IO.Error (mkIOError, eofErrorType, ioeSetErrorString)
 
 import Foreign (allocaBytes)
 import Foreign.Ptr
 import Foreign.C.Types
-import Data.ByteString.Internal as B
 
 #ifdef arch_i386
 -- See .cabal wrt GCC 4.8.2 asm compilation bug
@@ -55,11 +54,11 @@ closeHandle UseRdRand = return ()
 -- Supported hardware:
 --      * RDRAND
 --      * Patches welcome
-hardwareRandom :: Int -> IO (Maybe B.ByteString)
+hardwareRandom :: B.ByteArray b => Int -> IO (Maybe b)
 hardwareRandom sz = Just <$> hGetEntropy UseRdRand sz
 
 -- |Read random data from a `CryptHandle`, which uses RDRAND (when on Xen)
-hGetEntropy :: CryptHandle -> Int -> IO B.ByteString
+hGetEntropy :: B.ByteArray b => CryptHandle -> Int -> IO b
 hGetEntropy UseRdRand = \n -> do
     B.create n $ \ptr ->  do
                 r <- c_get_rand_bytes (castPtr ptr) (fromIntegral n)

@@ -57,7 +57,7 @@ library
   }
   other-extensions:    CPP, ForeignFunctionInterface, BangPatterns,
                        ScopedTypeVariables
-  build-depends:       base >= 4.8 && < 5, bytestring
+  build-depends:       base >= 4.8 && < 5, memory
 
   default-language:    Haskell2010
 
