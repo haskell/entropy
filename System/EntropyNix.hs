@@ -46,7 +46,7 @@ data CryptHandle
     | UseGetRandom
 #endif
 
--- | Get random values from the hardward RNG or return Nothing if no
+-- | Get random values from the hardware RNG or return Nothing if no
 -- supported hardware RNG is available.
 --
 -- Supported hardware:

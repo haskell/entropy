@@ -13,7 +13,7 @@ module System.EntropyXen
         , openHandle
         , hGetEntropy
         , closeHandle
-        , hardwardRNG
+        , hardwareRandom
         ) where
 
 import Control.Monad (liftM, when)
@@ -49,7 +49,7 @@ openHandle = do
 closeHandle :: CryptHandle -> IO ()
 closeHandle UseRdRand = return ()
 
--- | Get random values from the hardward RNG or return Nothing if no
+-- | Get random values from the hardware RNG or return Nothing if no
 -- supported hardware RNG is available.
 --
 -- Supported hardware:
