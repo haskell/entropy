@@ -20,23 +20,26 @@ main = defaultMainWithHooks hk
                                         let mConf  = lookupProgram ghcProgram (withPrograms lbi)
                                             err    = error "Could not determine C compiler"
                                             cc     = locationPath . programLocation  . maybe err id $ mConf
-                                        b <- canUseRDRAND cc
-                                        let newWithPrograms1 = userSpecifyArgs "gcc" cArgs (withPrograms lbi)
-                                            newWithPrograms  = userSpecifyArgs "ghc" cArgsHC newWithPrograms1
-                                            lbiNew = if b then (lbi {withPrograms = newWithPrograms }) else lbi
+                                        lbiNew <- checkRDRAND cc lbi >>= checkGetrandom cc >>= checkGetentropy cc
                                         buildHook simpleUserHooks pd lbiNew uh bf
                       }
 
-cArgs :: [String]
-cArgs = ["-DHAVE_RDRAND"]
+compileCheck :: FilePath -> String -> String -> String -> IO Bool
+compileCheck cc testName message sourceCode = do
+        withTempDirectory normal "" testName $ \tmpDir -> do
+        writeFile (tmpDir ++ "/" ++ testName ++ ".c") sourceCode
+        ec <- myRawSystemExitCode normal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a","-no-hs-main"]
+        notice normal $ message ++ show (ec == ExitSuccess)
+        return (ec == ExitSuccess)
 
-cArgsHC :: [String]
-cArgsHC = cArgs ++ map ("-optc" ++) cArgs
+addOptions :: [String] -> [String] -> LocalBuildInfo -> LocalBuildInfo
+addOptions cArgs hsArgs lbi = lbi {withPrograms = newWithPrograms }
+  where newWithPrograms1 = userSpecifyArgs "gcc" cArgs (withPrograms lbi)
+        newWithPrograms  = userSpecifyArgs "ghc" (hsArgs ++ map ("-optc" ++) cArgs) newWithPrograms1
 
-canUseRDRAND :: FilePath -> IO Bool
-canUseRDRAND cc = do
-        withTempDirectory normal "" "testRDRAND" $ \tmpDir -> do
-        writeFile (tmpDir ++ "/testRDRAND.c")
+checkRDRAND :: FilePath -> LocalBuildInfo -> IO LocalBuildInfo
+checkRDRAND cc lbi = do
+        b <- compileCheck cc "testRDRAND" "Result of RDRAND Test: "
                 (unlines        [ "#include <stdint.h>"
                                 , "int main() {"
                                 , "   uint64_t therand;"
@@ -46,9 +49,61 @@ canUseRDRAND cc = do
                                 , "   return (!err);"
                                 , "}"
                                 ])
-        ec <- myRawSystemExitCode normal cc [tmpDir </> "testRDRAND.c", "-o", tmpDir ++ "/a.o","-c"]
-        notice normal $ "Result of RDRAND Test: " ++ show (ec == ExitSuccess)
-        return (ec == ExitSuccess)
+        return $ if b then addOptions cArgs cArgs lbi else lbi
+  where cArgs = ["-DHAVE_RDRAND"]
+
+checkGetrandom :: FilePath -> LocalBuildInfo -> IO LocalBuildInfo
+checkGetrandom cc lbi = do
+        libcGetrandom <- compileCheck cc "testLibcGetrandom" "Result of libc getrandom() Test: "
+                (unlines        [ "#define _GNU_SOURCE"
+                                , "#include <errno.h>"
+                                , "#include <sys/random.h>"
+
+                                , "int main()"
+                                , "{"
+                                , "    char tmp;"
+                                , "    return getrandom(&tmp, sizeof(tmp), GRND_NONBLOCK) != -1;"
+                                , "}"
+                                ])
+        if libcGetrandom then return $ addOptions cArgsLibc cArgsLibc lbi
+        else do
+        syscallGetrandom <- compileCheck cc "testSyscallGetrandom" "Result of syscall getrandom() Test: "
+                (unlines        [ "#define _GNU_SOURCE"
+                                , "#include <errno.h>"
+                                , "#include <unistd.h>"
+                                , "#include <sys/syscall.h>"
+                                , "#include <sys/types.h>"
+                                , "#include <linux/random.h>"
+
+                                , "static ssize_t getrandom(void* buf, size_t buflen, unsigned int flags)"
+                                , "{"
+                                , "    return syscall(SYS_getrandom, buf, buflen, flags);"
+                                , "}"
+
+                                , "int main()"
+                                , "{"
+                                , "    char tmp;"
+                                , "    return getrandom(&tmp, sizeof(tmp), GRND_NONBLOCK) != -1;"
+                                , "}"
+                                ])
+        return $ if syscallGetrandom then addOptions cArgs cArgs lbi else lbi
+  where cArgs = ["-DHAVE_GETRANDOM"]
+        cArgsLibc = cArgs ++ ["-DHAVE_LIBC_GETRANDOM"]
+
+checkGetentropy :: FilePath -> LocalBuildInfo -> IO LocalBuildInfo
+checkGetentropy cc lbi = do
+        b <- compileCheck cc "testGetentropy" "Result of getentropy() Test: "
+                (unlines        [ "#define _GNU_SOURCE"
+                                , "#include <unistd.h>"
+
+                                , "int main()"
+                                , "{"
+                                , "    char tmp;"
+                                , "    return getentropy(&tmp, sizeof(tmp));"
+                                , "}"
+                                ])
+        return $ if b then addOptions cArgs cArgs lbi else lbi
+  where cArgs = ["-DHAVE_GETENTROPY"]
 
 myRawSystemExitCode :: Verbosity -> FilePath -> [String] -> IO ExitCode
 #if __GLASGOW_HASKELL__ >= 704

@@ -2,8 +2,8 @@
 
 This package allows Haskell users to easily acquire entropy for use in critical
 security applications by calling out to either windows crypto api, unix/linux's
-`/dev/urandom`. Hardware RNGs (currently RDRAND, patches welcome) are supported
-via the `hardwareRNG` function.
+`getrandom` and `/dev/urandom`. Hardware RNGs (currently RDRAND, patches
+welcome) are supported via the `hardwareRNG` function.
 
 ## Quick Start
 

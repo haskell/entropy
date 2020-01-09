@@ -26,7 +26,7 @@ import Language.Javascript.JSaddle.Object as JS
 -- |Handle for manual resource management
 newtype CryptHandle = CH Crypto
 
--- | Get random values from the hardward RNG or return Nothing if no
+-- | Get random values from the hardware RNG or return Nothing if no
 -- supported hardware RNG is available.
 --
 -- Not supported on ghcjs.
