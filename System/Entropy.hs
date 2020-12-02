@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface, BangPatterns, ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
 {-|
  Maintainer: Thomas.DuBuisson@gmail.com
  Stability: beta
