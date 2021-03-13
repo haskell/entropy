@@ -34,7 +34,7 @@ flag halvm
 
 
 custom-setup
-  setup-depends: Cabal >= 1.10 && < 3.3
+  setup-depends: Cabal >= 1.10 && < 3.5
                , base < 5
                , filepath < 1.5
                , directory < 1.4
