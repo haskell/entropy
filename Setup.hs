@@ -26,7 +26,7 @@ main = defaultMainWithHooks hk
 
 compileCheck :: FilePath -> String -> String -> String -> IO Bool
 compileCheck cc testName message sourceCode = do
-        withTempDirectory normal "" testName $ \tmpDir -> do
+    withTempDirectory normal "" testName $ \tmpDir -> do
         writeFile (tmpDir ++ "/" ++ testName ++ ".c") sourceCode
         ec <- myRawSystemExitCode normal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a","-no-hs-main"]
         notice normal $ message ++ show (ec == ExitSuccess)
@@ -54,7 +54,7 @@ checkRDRAND cc lbi = do
 
 checkGetrandom :: FilePath -> LocalBuildInfo -> IO LocalBuildInfo
 checkGetrandom cc lbi = do
-        libcGetrandom <- compileCheck cc "testLibcGetrandom" "Result of libc getrandom() Test: "
+    libcGetrandom <- compileCheck cc "testLibcGetrandom" "Result of libc getrandom() Test: "
                 (unlines        [ "#define _GNU_SOURCE"
                                 , "#include <errno.h>"
                                 , "#include <sys/random.h>"
@@ -65,8 +65,8 @@ checkGetrandom cc lbi = do
                                 , "    return getrandom(&tmp, sizeof(tmp), GRND_NONBLOCK) != -1;"
                                 , "}"
                                 ])
-        if libcGetrandom then return $ addOptions cArgsLibc cArgsLibc lbi
-        else do
+    if libcGetrandom then return $ addOptions cArgsLibc cArgsLibc lbi
+    else do
         syscallGetrandom <- compileCheck cc "testSyscallGetrandom" "Result of syscall getrandom() Test: "
                 (unlines        [ "#define _GNU_SOURCE"
                                 , "#include <errno.h>"
