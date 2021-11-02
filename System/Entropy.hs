@@ -11,7 +11,6 @@
     - Windows via CryptoAPI
     - *nix systems via @\/dev\/urandom@
        - Includes QNX
-    - Xen (only when RDRAND is available)
     - ghcjs/browser via JavaScript crypto API.
 -}
 
@@ -28,8 +27,6 @@ module System.Entropy
 import System.EntropyGhcjs
 #elif defined(isWindows)
 import System.EntropyWindows
-#elif XEN
-import System.EntropyXen
 #else
 import System.EntropyNix
 #endif
