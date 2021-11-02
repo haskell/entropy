@@ -16,8 +16,6 @@ homepage:       https://github.com/TomMD/entropy
 bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 
--- build-type:  Simple
--- ^^ Used for HaLVM
 build-type:     Custom
 
 -- ^^ Test for RDRAND support using 'ghc'
@@ -25,14 +23,6 @@ cabal-version:  >=1.10
 tested-with:    GHC == 8.2.2
 -- data-files:
 extra-source-files:   ./cbits/getrandom.c ./cbits/random_initialized.c ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
-
--- Notice to compile  with HaLVM the above 'build-type' must be changed
--- to 'Simple' instead of 'Custom'.  The current build system naively
--- runs GHC to determine if the compiler supports RDRAND before proceeding.
-flag halvm
-    description:        Build for the HaLVM
-    default:            False
-
 
 custom-setup
   setup-depends: Cabal >= 1.10 && < 3.7
@@ -50,10 +40,7 @@ library
     if os(windows)
       other-modules: System.EntropyWindows
     else {
-         if os(halvm)
-           other-modules: System.EntropyXen
-         else
-           other-modules: System.EntropyNix
+      other-modules: System.EntropyNix
     }
   }
   other-extensions:    CPP, ForeignFunctionInterface, BangPatterns,
@@ -67,9 +54,6 @@ library
                      , jsaddle
   }
   else {
-    if(os(halvm))
-      cpp-options: -DXEN -DHAVE_RDRAND
-      cc-options:  -DXEN -DHAVE_RDRAND
     if arch(x86_64)
       cpp-options: -Darch_x86_64
       cc-options:  -Darch_x86_64 -O2
@@ -85,9 +69,8 @@ library
       cc-options:  -DisWindows
       extra-libraries: advapi32
     else
-      if !os(halvm)
-         Build-Depends: unix
-         c-sources: cbits/getrandom.c cbits/random_initialized.c
+      Build-Depends: unix
+      c-sources: cbits/getrandom.c cbits/random_initialized.c
   }
 
 
