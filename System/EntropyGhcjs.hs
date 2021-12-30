@@ -19,7 +19,7 @@ import Data.ByteString as B
 import GHCJS.DOM.Crypto as Crypto
 import GHCJS.DOM.Types (ArrayBufferView (..), fromJSValUnchecked)
 import GHCJS.DOM.GlobalCrypto (getCrypto)
-import GHCJS.DOM (currentWindowUnchecked)
+import GHCJS.DOM (globalThisUnchecked)
 import Language.Javascript.JSaddle.Object as JS
 
 
@@ -36,8 +36,8 @@ hardwareRandom _ = pure Nothing
 -- |Open a `CryptHandle`
 openHandle :: IO CryptHandle
 openHandle = do
-  w <- currentWindowUnchecked
-  CH <$> getCrypto w
+  this <- globalThisUnchecked
+  CH <$> getCrypto this
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
