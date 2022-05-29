@@ -31,21 +31,20 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (toBool)
 import Foreign.Storable (peek)
 
-{- C example for windows rng - taken from a blog, can't recall which one but thank you!
-        #include <Windows.h>
-        #include <Wincrypt.h>
-        ...
-        //
-        // DISCLAIMER: Don't forget to check your error codes!!
-        // I am not checking as to make the example simple...
-        //
-        HCRYPTPROV hCryptCtx = NULL;
-        BYTE randomArray[128];
-
-        CryptAcquireContext(&hCryptCtx, NULL, MS_DEF_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
-        CryptGenRandom(hCryptCtx, 128, randomArray);
-        CryptReleaseContext(hCryptCtx, 0);
--}
+-- C example for windows rng - taken from a blog, can't recall which one but thank you!
+--      #include <Windows.h>
+--      #include <Wincrypt.h>
+--      ...
+--      //
+--      // DISCLAIMER: Don't forget to check your error codes!!
+--      // I am not checking as to make the example simple...
+--      //
+--      HCRYPTPROV hCryptCtx = NULL;
+--      BYTE randomArray[128];
+--
+--      CryptAcquireContext(&hCryptCtx, NULL, MS_DEF_PROV, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
+--      CryptGenRandom(hCryptCtx, 128, randomArray);
+--      CryptReleaseContext(hCryptCtx, 0);
 
 
 #ifdef arch_i386
