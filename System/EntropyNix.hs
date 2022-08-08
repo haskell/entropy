@@ -34,7 +34,7 @@ import Data.ByteString.Internal as B
 #undef HAVE_RDRAND
 #endif
 
-import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd)
+import System.Posix (openFd, closeFd, fdReadBuf, OpenMode(..), defaultFileFlags, Fd, OpenFileFlags(..))
 
 source :: FilePath
 source = "/dev/urandom"
@@ -75,7 +75,11 @@ openHandle =
 openRandomFile :: IO Fd
 openRandomFile = do
   evaluate ensurePoolInitialized
+#if MIN_VERSION_unix(2,8,0)
+  openFd source ReadOnly defaultFileFlags { creat = Nothing }
+#else
   openFd source ReadOnly Nothing defaultFileFlags
+#endif
 
 -- |Close the `CryptHandle`
 closeHandle :: CryptHandle -> IO ()
