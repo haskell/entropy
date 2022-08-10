@@ -25,7 +25,7 @@ tested-with:    GHC == 8.2.2
 extra-source-files:   ./cbits/getrandom.c ./cbits/random_initialized.c ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
 
 custom-setup
-  setup-depends: Cabal >= 1.10 && < 3.7
+  setup-depends: Cabal >= 1.10 && < 3.9
                , base < 5
                , filepath < 1.5
                , directory < 1.4
