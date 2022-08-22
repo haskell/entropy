@@ -36,11 +36,11 @@ import Control.Exception (bracket)
 
 -- |Get a specific number of bytes of cryptographically
 -- secure random data using the *system-specific* sources.
--- (As of 0.4.  Verions <0.4 mixed system and hardware sources)
+-- (As of 0.4.  Versions <0.4 mixed system and hardware sources)
 --
 -- The returned random value is considered cryptographically secure but not true entropy.
 --
--- On some platforms this requies a file handle which can lead to resource
+-- On some platforms this requires a file handle which can lead to resource
 -- exhaustion in some situations.
 getEntropy :: Int               -- ^ Number of bytes
            -> IO B.ByteString
