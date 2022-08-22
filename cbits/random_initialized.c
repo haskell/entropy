@@ -6,11 +6,13 @@
 #include <unistd.h>
 
 #ifdef HAVE_GETENTROPY
+#ifndef !DO_NOT_USE_GET_ENTROPY
 static int ensure_pool_initialized_getentropy()
 {
     char tmp;
     return getentropy(&tmp, sizeof(tmp));
 }
+#endif
 #endif
 
 // Poll /dev/random to wait for randomness. This is a proxy for the /dev/urandom
@@ -46,8 +48,10 @@ static int ensure_pool_initialized_poll()
 int ensure_pool_initialized()
 {
 #ifdef HAVE_GETENTROPY
+#ifndef !DO_NOT_USE_GET_ENTROPY
     if (ensure_pool_initialized_getentropy() == 0)
         return 0;
+#endif
 #endif
 
     return ensure_pool_initialized_poll();
