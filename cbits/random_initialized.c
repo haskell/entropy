@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #ifdef HAVE_GETENTROPY
-#ifndef !DO_NOT_USE_GET_ENTROPY
+#ifndef DO_NOT_USE_GET_ENTROPY
 static int ensure_pool_initialized_getentropy()
 {
     char tmp;
@@ -48,7 +48,7 @@ static int ensure_pool_initialized_poll()
 int ensure_pool_initialized()
 {
 #ifdef HAVE_GETENTROPY
-#ifndef !DO_NOT_USE_GET_ENTROPY
+#ifndef DO_NOT_USE_GET_ENTROPY
     if (ensure_pool_initialized_getentropy() == 0)
         return 0;
 #endif
