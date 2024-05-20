@@ -1,0 +1,3 @@
+branches: main
+cabal-check: False
+haddock: >=8.2
