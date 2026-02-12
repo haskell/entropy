@@ -1,4 +1,4 @@
-cabal-version:  >=1.10
+cabal-version:  3.8
 name:           entropy
 version:        0.4.1.11
 description:    A mostly platform independent method to obtain cryptographically strong entropy
@@ -6,7 +6,7 @@ description:    A mostly platform independent method to obtain cryptographically
                 Users looking for cryptographically strong (number-theoretically
                 sound) PRNGs should see the 'DRBG' package too.
 synopsis:       A platform independent entropy source
-license:        BSD3
+license:        BSD-3-Clause
 license-file:   LICENSE
 copyright:      Thomas DuBuisson <thomas.dubuisson@gmail.com>
 author:         Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -16,7 +16,7 @@ homepage:       https://github.com/TomMD/entropy
 bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 
-build-type:     Custom
+build-type:     Simple
 
 tested-with:
   GHC == 9.14.1
@@ -61,6 +61,8 @@ library
   else {
     if os(windows)
       other-modules: System.EntropyWindows
+    elif os(wasi)
+      other-modules: System.EntropyWasi
     else {
       other-modules: System.EntropyNix
     }
@@ -90,6 +92,7 @@ library
       cpp-options: -DisWindows
       cc-options:  -DisWindows
       extra-libraries: advapi32
+    elif os(wasi)
     else
       Build-Depends: unix
       c-sources: cbits/getrandom.c cbits/random_initialized.c

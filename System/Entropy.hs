@@ -27,6 +27,8 @@ module System.Entropy
 import System.EntropyGhcjs
 #elif defined(isWindows)
 import System.EntropyWindows
+#elif wasi_HOST_OS
+import System.EntropyWasi
 #else
 import System.EntropyNix
 #endif
