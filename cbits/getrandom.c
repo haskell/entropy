@@ -1,3 +1,4 @@
+#include "config.h"
 #ifdef HAVE_GETRANDOM
 
 #define _GNU_SOURCE

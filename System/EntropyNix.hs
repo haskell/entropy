@@ -29,6 +29,8 @@ import Foreign.C.Error
 import Foreign.C.Types
 import Data.ByteString.Internal as B
 
+#include "config.h"
+
 #ifdef arch_i386
 -- See .cabal wrt GCC 4.8.2 asm compilation bug
 #undef HAVE_RDRAND

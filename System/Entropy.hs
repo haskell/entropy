@@ -23,6 +23,8 @@ module System.Entropy
           closeHandle
         ) where
 
+#include "config.h"
+
 #ifdef ghcjs_HOST_OS
 import System.EntropyGhcjs
 #elif defined(isWindows)

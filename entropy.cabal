@@ -16,7 +16,7 @@ homepage:       https://github.com/TomMD/entropy
 bug-reports:    https://github.com/TomMD/entropy/issues
 stability:      stable
 
-build-type:     Custom
+build-type:     Configure
 
 tested-with:
   GHC == 9.14.1
@@ -34,24 +34,26 @@ tested-with:
   GHC == 8.2.2
 
 extra-source-files:
-  ./cbits/getrandom.c
-  ./cbits/random_initialized.c
-  ./cbits/rdrand.c
-  ./cbits/rdrand.h
+  cbits/getrandom.c
+  cbits/random_initialized.c
+  cbits/rdrand.c
+  cbits/rdrand.h
+  cbits/config.h.in
+  configure.ac
+  configure
   README.md
+
+extra-tmp-files:
+  config.log
+  config.status
+  autom4te.cache
+  cbits/config.h
 
 Flag DoNotGetEntropy
   Description: Avoid use of the getentropy() *nix function. By default getentropy will be used
                if detected during compilation (this plays poorly with cross compilation).
   Default: False
   Manual: True
-
-custom-setup
-  setup-depends: Cabal >= 1.10 && < 3.17
-               , base < 5
-               , filepath < 1.6
-               , directory < 1.4
-               , process < 1.7
 
 library
   ghc-options:  -O2
@@ -93,6 +95,7 @@ library
     else
       Build-Depends: unix
       c-sources: cbits/getrandom.c cbits/random_initialized.c
+      include-dirs: cbits
   }
   if flag(DoNotGetEntropy) {
     cc-options: -DDO_NOT_USE_GET_ENTROPY

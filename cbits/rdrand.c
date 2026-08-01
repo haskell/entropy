@@ -1,3 +1,4 @@
+#include "config.h"
 #ifdef HAVE_RDRAND
 
 #include <stdint.h>

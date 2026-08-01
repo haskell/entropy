@@ -31,6 +31,8 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (toBool)
 import Foreign.Storable (peek)
 
+#include "config.h"
+
 -- C example for windows rng - taken from a blog, can't recall which one but thank you!
 --      #include <Windows.h>
 --      #include <Wincrypt.h>
