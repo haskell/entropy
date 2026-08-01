@@ -1,4 +1,5 @@
 #ifndef rdrand_h
+#include "config.h"
 #ifdef HAVE_RDRAND
 #include <stdint.h>
 

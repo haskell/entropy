@@ -1,9 +1,15 @@
+#include "config.h"
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+// on macos, getentropy is in sys/random.h
+#ifdef HAVE_SYS_RANDOM_H
+# include <sys/random.h>
+#endif
 
 #ifdef HAVE_GETENTROPY
 #ifndef DO_NOT_USE_GET_ENTROPY
