@@ -26,11 +26,15 @@ main = defaultMainWithHooks hk
 
 compileCheck :: FilePath -> String -> String -> String -> IO Bool
 compileCheck cc testName message sourceCode = do
-    withTempDirectory normal "" testName $ \tmpDir -> do
-        writeFile (tmpDir ++ "/" ++ testName ++ ".c") sourceCode
-        ec <- myRawSystemExitCode normal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a","-no-hs-main"]
-        notice normal $ message ++ show (ec == ExitSuccess)
-        return (ec == ExitSuccess)
+    withTempDirectory
+#if !MIN_VERSION_Cabal(3,18,0)
+        myNormal
+#endif
+        "" testName $ \tmpDir -> do
+            writeFile (tmpDir ++ "/" ++ testName ++ ".c") sourceCode
+            ec <- myRawSystemExitCode myNormal cc [tmpDir </> testName ++ ".c", "-o", tmpDir ++ "/a","-no-hs-main"]
+            notice myNormal $ message ++ show (ec == ExitSuccess)
+            return (ec == ExitSuccess)
 
 addOptions :: [String] -> [String] -> LocalBuildInfo -> LocalBuildInfo
 addOptions cArgs hsArgs lbi = lbi {withPrograms = newWithPrograms }
@@ -130,4 +134,11 @@ myRawSystemExitCode verbosity path args = do
       | verbosity >= deafening = print (path, args)
       | verbosity >= verbose = putStrLn $ unwords (path : args)
       | otherwise = return ()
+#endif
+
+myNormal :: Verbosity
+#if MIN_VERSION_Cabal(3,18,0)
+myNormal = mkVerbosity defaultVerbosityHandles normal
+#else
+myNormal = normal
 #endif
